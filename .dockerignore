@@ -1,0 +1,11 @@
+# Mantiene el contexto de build pequeno: solo el codigo fuente hace falta.
+.git
+docs
+*.md
+*.dat
+*.csv
+flag.txt
+# Artefactos de compilacion y exploits (se generan dentro del contenedor)
+build/
+*.o
+inventario
