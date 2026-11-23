@@ -1,23 +1,46 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guia operativa para Claude Code en este repositorio: como trabajar aqui.
 
-## Estado del repositorio
+- El **QUE** (enunciado del Trabajo Final de SSI, UPNA) esta en `README.md`.
+- Las **DECISIONES de diseno** y el **ESTADO** del proyecto estan en `docs/DECISIONES.md`.
 
-Solo contiene `README.md` (enunciado del trabajo final de Seguridad en Sistemas Informáticos, UPNA). Todavía no hay código, Makefile ni tests, así que no existen comandos de build/lint/test. Cuando se añadan, documentarlos aquí.
+Este fichero no reproduce ni resume esos dos; remite a ellos.
 
-## Qué se va a construir (resumen del enunciado)
+## Entorno de trabajo
 
-Trabajo en cuatro partes, cada una dependiente de la anterior (1 → 2 → 3; la 4 es independiente):
+- Todo build / run / debug ocurre **dentro del contenedor Docker `amd64`** compartido, nunca en el host.
+- El host es Windows + Mac; en Mac Apple Silicon el contenedor corre emulado. **Compilar ELF x86 directamente en el host (sobre todo Mac ARM) no es valido.**
+- El contenedor lleva `gcc`, `gcc-multilib` (32 bits), `gdb`+`pwndbg`, `python3`+`pwntools`, `socat` (Metasploit se anade para la Parte 3). Ver `Dockerfile` (por crear) y `docs/DECISIONES.md`.
+- **Validacion final:** maquina Linux del laboratorio.
 
-1. **App en C con TUI y Buffer Overflow deliberado**: gestión de usuarios, registros (CRUD, búsqueda, ordenación, estadísticas) y persistencia en ficheros locales. Una funcionalidad debe tener un overflow que permita redirigir la ejecución a `win()`, que lee `./flag.txt` y la muestra. `win()` no debe llamarse desde el flujo normal. Entregables: código C, Makefile, binario y exploit (Bash o Python).
-2. **Exploit para el binario del profesorado**: redirigir a `execute_cmd` (ejecuta `/bin/bash` vía `system()`) y leer `/flag/flag.txt`. El exploit recibe IP como primer argumento y puerto como segundo. Servicio remoto: `10.6.31.40:42XX` (XX = nº de grupo). Prueba local: `socat TCP-LISTEN:PUERTO,reuseaddr,fork EXEC:./binario`.
-3. **Módulo de Metasploit en Ruby** para la vulnerabilidad, compatible con cualquier payload del sistema remoto, probado al menos con Meterpreter y validado en una instalación limpia y estándar de Metasploit.
-4. **Documento técnico en Markdown**: sin imágenes ni capturas, máximo 6 páginas (problemas, metodología, análisis, decisiones técnicas, explotación detallada).
+## Comandos
 
-## Restricciones a tener en cuenta
+Via oficial a traves del Makefile (aun por crear; targets ya acordados):
 
-- **Arquitectura inversa en la parte 1**: si el binario del grupo (parte 2) es de 32 bits, la app propia se compila en 64 bits; si no, en 32 bits.
-- La vulnerabilidad es intencionada y forma parte del trabajo académico; no "arreglarla" al refactorizar.
-- Código modular: funciones independientes, `struct`, arrays, punteros, manipulación de cadenas, separación en módulos.
-- El README está en español; mantener el idioma en documentación y mensajes de la TUI.
+- `make all` — compila el binario.
+- `make clean` — limpia artefactos.
+- `make run` — lanza la TUI.
+- `make serve` — expone el binario por red con socat en el puerto `4220`.
+- `make exploit` — ejecuta el exploit (Python + pwntools).
+
+Variable `ARCH` del Makefile: `64` por defecto (`-m64`), `32` para `-m32`.
+
+## Estructura del codigo
+
+- Codigo modular: un par `.c`/`.h` por modulo; el codigo nuevo cae en el modulo que le corresponde por responsabilidad.
+- **Idioma del codigo:** identificadores y comentarios en espanol **sin acentos** (p. ej. `buscar_producto`); las cadenas de la TUI van en espanol con acentos.
+- Mapa completo de modulos (`main`, `ui`, `auth`, `inventory`, `storage`, `stats`, `vuln`, `sha256`) y modelo de datos: ver `docs/DECISIONES.md`.
+
+## Invariantes (no romper al refactorizar)
+
+- La **vulnerabilidad es intencionada**: la busqueda de producto lee con `scanf("%s", buf)` sobre `char buf[64]` sin limite. No "arreglarla".
+- `win()` **no se llama nunca** desde el flujo normal; solo se alcanza via el overflow.
+- Mantener los flags de compilacion de la vuln: `-fno-stack-protector -no-pie -g`.
+- TUI y documentacion en **espanol**.
+- **Arquitectura inversa:** si el binario del profesor (Parte 2) es de 32 bits, nuestra app se compila en 64 bits; y viceversa.
+
+## Punteros
+
+- `README.md` — enunciado (el que).
+- `docs/DECISIONES.md` — decisiones de diseno y estado por partes (el porque y el progreso).
