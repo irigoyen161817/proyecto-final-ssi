@@ -72,7 +72,12 @@ RUN git clone --depth 1 --branch 2024.02.14 \
 # no desactiva el ASLR global del sistema, por lo que no necesita privilegios extra.
 RUN mkdir -p /etc/gdb \
     && echo 'set disable-randomization on' >> /etc/gdb/gdbinit \
-    && echo 'source /opt/pwndbg/gdbinit.py' >> /etc/gdb/gdbinit
+    && echo 'source /opt/pwndbg/gdbinit.py' >> /etc/gdb/gdbinit \
+    # setup.sh ya anade el `source` de pwndbg al ~/.gdbinit del usuario de build
+    # (root). Al tenerlo tambien en el gdbinit del sistema, correr como root cargaria
+    # pwndbg dos veces (gdb protesta al arrancar). Se elimina la copia de root para
+    # que la unica fuente sea /etc/gdb/gdbinit (vale para root y para UID mapeado).
+    && sed -i '/pwndbg\/gdbinit.py/d' /root/.gdbinit 2>/dev/null || true
 
 WORKDIR /work
 
